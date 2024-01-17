@@ -2,7 +2,6 @@
 # Paddle + Physics
 # Author: Michael Sumaya
 # =============================================================================
-from typing import Any
 import pygame as gm
 from pygame.sprite import Group, Sprite
 from settings import Settings
@@ -52,7 +51,7 @@ class Paddle(Sprite):
             self.rect,
         )
 
-    def update(self, *args: Any, **kwargs: Any) -> None:
+    def update(self) -> None:
         """Update paddle based on movement flag"""
         if (self.ismoving_right
                 and self.rect.right < self.screen_rect.right):
@@ -64,7 +63,6 @@ class Paddle(Sprite):
         self.rect.centerx = self.xpos
 
         self.draw_paddle()
-        return super().update(*args, **kwargs)
 
     def __str__(self) -> str:
         stats = f"Paddle: {self.xpos, self.ypos}"

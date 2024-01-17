@@ -3,3 +3,6 @@ __pycache__
 
 # Virtual Env
 .venv/
+
+# Highscore file
+highscore.pickle

@@ -4,6 +4,7 @@
 # =============================================================================
 import pygame as gm
 
+
 class Settings():
     """Game Configurations"""
 
@@ -11,6 +12,7 @@ class Settings():
         # Game details
         self.game_name = 'Breakout Clone by Michael Sumaya'
         self.game_desiredfps = 60
+        self.show_fps = True
 
         # Screen
         self.screen_width = 600
@@ -20,7 +22,7 @@ class Settings():
         # Playing field
         self.field_xpos = 0
         self.field_ypos = 100
-        self.field_width = 600
+        self.field_width = self.screen_width
         self.field_height = self.screen_height - self.field_ypos
         self.field_rect = (self.field_xpos,
                            self.field_ypos,
@@ -56,3 +58,27 @@ class Settings():
             gm.K_RIGHT,
             gm.K_d,
         )
+
+    class Scoreboard():
+        """Scoreboard settings"""
+        pos_current_label = (310, 10)
+        pos_current_value = (310, 40)
+        pos_highscore_label = (10, 10)
+        pos_highscore_value = (10, 40)
+        point_normal = 1
+        point_combo = 1
+
+        class Font():
+            """Scoreboard - Font settings"""
+            type = 'Courier 10 Pitch'
+            size = 24
+            color_current = 'gray'
+            color_high = 'yellow'
+
+    class Prompt():
+        """Prompt message settings"""
+        COLOR_WARNING = 'yellow'
+        COLOR_ERROR = 'red'
+        COLOR_NORMAL = 'white'
+        font_type = 'Courier 10 Pitch'
+        size = 18

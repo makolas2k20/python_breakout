@@ -11,8 +11,16 @@ from pygame.sprite import Group, GroupSingle
 import functions as gfn
 from settings import Settings
 from paddle import Paddle
-from ball import Ball
 from targets import Target
+from score import Scoring
+from game_events import GameEvents
+
+
+def block_events():
+    blocked_events = [
+        gm.MOUSEMOTION,
+    ]
+    gm.event.set_blocked(blocked_events)
 
 
 def check_events(
@@ -20,9 +28,13 @@ def check_events(
         settings: Settings,
         paddle: Paddle,
         ball: GroupSingle,
-):
+        scoreboard: Scoring,
+        eventhndl: GameEvents,
+) -> None:
     for event in gm.event.get():
         if event.type == gm.QUIT:
+            scoreboard._save_highscore()
+            gm.quit()
             sys.exit()
 
         elif event.type == gm.KEYDOWN:
@@ -44,7 +56,10 @@ def check_events(
             )
 
         else:
-            pass
+            eventhndl.parse_event(
+                event.type,
+                scoreboard=scoreboard,
+            )
 
 
 def check_events_keydown(
@@ -53,7 +68,7 @@ def check_events_keydown(
         paddle: Paddle,
         ball: GroupSingle,
         event: gm.event.Event,
-):
+) -> None:
     if event.key in settings.event_key_left:
         paddle.ismoving_left = True
     elif event.key in settings.event_key_right:
@@ -69,7 +84,7 @@ def check_events_keyup(
         paddle: Paddle,
         ball: GroupSingle,
         event: gm.event.Event,
-):
+) -> None:
     if event.key in settings.event_key_left:
         paddle.ismoving_left = False
     elif event.key in settings.event_key_right:
@@ -85,7 +100,7 @@ def check_events_keyup(
 def draw_field(
         screen: gm.Surface,
         settings: Settings,
-):
+) -> None:
     gm.draw.rect(
         surface=screen,
         color=settings.field_border_color,
@@ -97,7 +112,7 @@ def draw_field(
 def draw_fps(
         screen: gm.Surface,
         fps: float,
-):
+) -> None:
     fps_font = ftype.SysFont("ubuntumono", 18)
     fps_val = round(fps, 0)
     xpos = 10
@@ -108,6 +123,24 @@ def draw_fps(
         f"FPS: {fps_val}",
         fgcolor=(0, 255, 0),
     )
+
+
+def draw_prompt(
+        screen: gm.Surface,
+        settings: Settings.Prompt,
+        message: str,
+        color: any,
+) -> None:
+    prompt = ftype.SysFont(settings.font_type, settings.size)
+    screen_rect = screen.get_rect()
+    prompt_scr, prompt_rect = prompt.render(
+        message,
+        fgcolor=color,
+    )
+    prompt_rect.centerx = screen_rect.centerx
+    prompt_rect.centery = screen_rect.centery + 50
+    screen.blit(prompt_scr, prompt_rect)
+
 
 
 def create_targets(
@@ -150,7 +183,7 @@ def add_target(
         spacer: int,
         y_offset,
         target_collection: Group,
-):
+) -> None:
     target = Target(screen, settings)
     width = target.rect.width
     height = target.rect.height
@@ -166,7 +199,8 @@ def add_target(
 def update_targets(
         ball: GroupSingle,
         targets: Group,
-):
+        scoreboard: Scoring,
+) -> None:
     HIT_THRESHOLD = ball.sprite.speed
     # Check collision with ball
     collisions = gm.sprite.groupcollide(
@@ -176,6 +210,10 @@ def update_targets(
         True,
     )
     if collisions:
+        # Update score
+        scoreboard.add_combo()
+
+        # Check how to bounce
         for ball_c, target_c in collisions.items():
             for target in target_c:
                 ball_rect = ball_c.rect
@@ -195,6 +233,22 @@ def update_targets(
                     ball.sprite.bounce_x()
 
 
+def new_level(
+        screen: gm.Surface,
+        settings: Settings,
+        ball: GroupSingle,
+) -> Group:
+    targets, bottom_y = gfn.create_targets(
+        screen,
+        settings,
+    )
+    ball.sprite.move(
+        ball.sprite.rect.centerx,
+        bottom_y + ball.sprite.rect.height,
+    )
+    return targets
+
+
 def update_screen(
         screen: gm.Surface,
         settings: Settings,
@@ -202,7 +256,9 @@ def update_screen(
         ball: GroupSingle,
         targets: Group,
         fps: float,
-):
+        scoreboard: Scoring,
+        eventhndl: GameEvents,
+) -> None:
     # Flood screen to clear all drawings
     screen.fill(settings.screen_bgcolor)
 
@@ -214,14 +270,30 @@ def update_screen(
 
     # Update ball
     ball.update(paddle)
+    if ball.sprite.paddle_hit:
+        scoreboard.reset_combo_point()
 
     # Targets
     targets.update()
 
     # Show FPS
-    draw_fps(screen, fps)
+    if settings.show_fps:
+        draw_fps(screen, fps)
+
+    # Update scores
+    scoreboard.update()
+
+    # Check if ball dropped below paddle/screen
+    if ball.sprite.isDropped:
+        if scoreboard.update_scoreboardhigh():
+            eventhndl.start_event_newhigh(250, 6)
+        ball.sprite.ball_dropped()
+        paddle.to_center()
+        draw_prompt(
+            screen,
+            settings.Prompt,
+            "Press 'spacebar' to continue.",
+            settings.Prompt.COLOR_WARNING,
+        )
 
     gm.display.flip()
-    if ball.sprite.isDropped:
-        # TODO: Game Over from ball falling
-        pass

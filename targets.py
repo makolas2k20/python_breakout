@@ -27,9 +27,9 @@ class Target(Sprite):
         self.width = self.settings.target_width
         self.height = self.settings.target_height
         self.rect = gm.Rect(0, 0, self.width, self.height)
-        self.color = (randint(1, 255),
-                      randint(1, 255),
-                      randint(1, 255))
+        self.color = (randint(100, 255),
+                      randint(100, 255),
+                      randint(100, 255))
 
     def move(self, xpos, ypos):
         self.rect.x = xpos
@@ -45,5 +45,5 @@ class Target(Sprite):
         return super().update(*args, **kwargs)
 
     def __str__(self) -> str:
-        stats = f"Target: {self.rect.top, self.rect.right, self.rect.bottom, self.rect.left}"
+        stats = f"Target: {self.rect}"
         return stats
