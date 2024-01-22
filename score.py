@@ -54,8 +54,8 @@ class Scoring():
         pos: tuple,
         color: any,
     ) -> None:
-        scoreboard_font = ftype.SysFont(self.settings.Font.type,
-                                        self.settings.Font.size)
+        scoreboard_font = ftype.Font(self.settings.Font.path,
+                                     self.settings.Font.size,)
         scoreboard_font.render_to(
             self.screen,
             pos,
@@ -100,6 +100,10 @@ class Scoring():
         """Increase combo point if more boxes hit"""
         self.point_combo += self.settings.point_combo
         return self.point_combo
+
+    def reset_score(self) -> None:
+        """Reset current score on game over"""
+        self.score_current = 0
 
     def reset_combo_point(self) -> None:
         """Reset combo point when ball hits paddle"""

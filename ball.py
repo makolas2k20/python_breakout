@@ -6,6 +6,7 @@ import pygame as gm
 from pygame.sprite import Group, Sprite
 from settings import Settings
 from paddle import Paddle
+from life import Life
 
 
 class Ball(Sprite):
@@ -101,13 +102,16 @@ class Ball(Sprite):
     def update(
             self,
             paddle: Paddle,
+            life: Life,
     ) -> None:
         # Collisions
         self.paddle_hit = self.check_collision(paddle)
 
         # Check if ball has dropped below screen
-        if self.rect.bottom >= self.screen_rect.bottom:
+        if (self.rect.bottom >= self.screen_rect.bottom
+                and not self.isDropped):
             self.isDropped = True
+            life.decrease()
 
         # Draw new position
         self.draw()

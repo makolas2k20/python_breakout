@@ -12,13 +12,15 @@ from paddle import Paddle
 from ball import Ball
 from score import Scoring
 from game_events import GameEvents
+from life import Life
+
 
 class MainGame():
 
     def __init__(self) -> None:
         gm.init()
-        self.game_settings = Settings()
         gfn.block_events()
+        self.game_settings = Settings()
 
     def start(self):
         self.screen_width = self.game_settings.screen_width
@@ -42,13 +44,21 @@ class MainGame():
         ball = GroupSingle(Ball(screen, self.game_settings, paddle))
 
         # Load Targets
-        targets, _ = gfn.create_targets(screen, self.game_settings)
+        targets, _, max_targets = gfn.create_targets(
+            screen, self.game_settings)
 
         # Init Scoring system
         scoreboard = Scoring(screen, self.game_settings)
 
         # Custom event handler
         event_handler = GameEvents(screen)
+
+        # Life display
+        lives = Life(screen, self.game_settings)
+
+        # Start with game off
+        ball.sprite.isDropped = True
+        self.game_settings.game_on = False
 
         while True:
             # Keep at desired FPS
@@ -62,21 +72,32 @@ class MainGame():
                 ball,
                 scoreboard,
                 event_handler,
+                lives,
             )
 
-            # Update on targets
-            gfn.update_targets(
-                ball,
-                targets,
-                scoreboard,
-            )
-
-            if len(targets) == 0:
-                targets = gfn.new_level(
-                    screen,
+            if self.game_settings.game_on:
+                # Update on targets
+                gfn.update_targets(
                     self.game_settings,
                     ball,
+                    targets,
+                    scoreboard,
                 )
+
+                target_count = len(targets)
+
+                if (
+                    target_count == 0
+                    or (lives.count == 0
+                        # This check needed otherwise the app
+                        # will continuously generate new targets
+                        and target_count < max_targets)
+                ):
+                    targets = gfn.new_level(
+                        screen,
+                        self.game_settings,
+                        ball,
+                    )
 
             # FPS counter
             current_fps = clock.get_fps()
@@ -91,4 +112,5 @@ class MainGame():
                 current_fps,
                 scoreboard,
                 event_handler,
+                lives,
             )

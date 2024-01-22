@@ -85,4 +85,9 @@ class GameEvents():
             scoreboard.settings.Font.color_high = self.newhigh_oldcolor
         else:
             scoreboard.settings.Font.color_high = HIGHSCORE_HIGHLIGHT_COLOR
+        if self.newhigh_counter == 1:
+            screen = kwargs["screen"]
+            settings = kwargs["settings"]
+            if settings.save_screenshot:
+                gm.image.save(screen, f"highscore_{scoreboard.score_high}.png")
         self.newhigh_counter -= 1

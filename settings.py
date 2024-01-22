@@ -3,6 +3,7 @@
 # Author: Michael Sumaya
 # =============================================================================
 import pygame as gm
+from pathlib import Path
 
 
 class Settings():
@@ -13,6 +14,8 @@ class Settings():
         self.game_name = 'Breakout Clone by Michael Sumaya'
         self.game_desiredfps = 60
         self.show_fps = True
+        self.save_screenshot = False
+        self.game_on = False
 
         # Screen
         self.screen_width = 600
@@ -43,6 +46,7 @@ class Settings():
         self.ball_height = 20
         self.ball_speed = 8
         self.ball_color = 'white'
+        self.ball_copy_target_color = True
 
         # Targets
         self.target_rows = 5
@@ -70,7 +74,8 @@ class Settings():
 
         class Font():
             """Scoreboard - Font settings"""
-            type = 'Courier 10 Pitch'
+            path = str(Path.absolute(
+                Path(".", "fonts", "courier10pitch.pfb")).resolve())
             size = 24
             color_current = 'gray'
             color_high = 'yellow'
@@ -80,5 +85,17 @@ class Settings():
         COLOR_WARNING = 'yellow'
         COLOR_ERROR = 'red'
         COLOR_NORMAL = 'white'
-        font_type = 'Courier 10 Pitch'
+        font = str(Path.absolute(
+            Path(".", "fonts", "courier10pitch.pfb")).resolve())
         size = 18
+
+    class Life():
+        """Life settings"""
+        pos_label = (10, 70)
+        pos_value = (100, 70)
+        font = str(Path.absolute(
+            Path(".", "fonts", "courier10pitch.pfb")).resolve())
+        font_size = 24
+        color = 'red'
+        max_life = 5
+        symbol = '§'

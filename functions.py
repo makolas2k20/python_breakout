@@ -14,6 +14,7 @@ from paddle import Paddle
 from targets import Target
 from score import Scoring
 from game_events import GameEvents
+from life import Life
 
 
 def block_events():
@@ -30,6 +31,7 @@ def check_events(
         ball: GroupSingle,
         scoreboard: Scoring,
         eventhndl: GameEvents,
+        life: Life,
 ) -> None:
     for event in gm.event.get():
         if event.type == gm.QUIT:
@@ -44,6 +46,8 @@ def check_events(
                 paddle,
                 ball,
                 event,
+                scoreboard,
+                life,
             )
 
         elif event.type == gm.KEYUP:
@@ -53,11 +57,15 @@ def check_events(
                 paddle,
                 ball,
                 event,
+                scoreboard,
+                life,
             )
 
         else:
             eventhndl.parse_event(
                 event.type,
+                screen=screen,
+                settings=settings,
                 scoreboard=scoreboard,
             )
 
@@ -68,6 +76,8 @@ def check_events_keydown(
         paddle: Paddle,
         ball: GroupSingle,
         event: gm.event.Event,
+        scoreboard: Scoring,
+        life: Life,
 ) -> None:
     if event.key in settings.event_key_left:
         paddle.ismoving_left = True
@@ -84,17 +94,35 @@ def check_events_keyup(
         paddle: Paddle,
         ball: GroupSingle,
         event: gm.event.Event,
+        scoreboard: Scoring,
+        life: Life,
 ) -> None:
     if event.key in settings.event_key_left:
         paddle.ismoving_left = False
     elif event.key in settings.event_key_right:
         paddle.ismoving_right = False
     elif event.key == gm.K_SPACE:
+        if not settings.game_on and life.count > 0:
+            settings.game_on = True
+        elif settings.game_on and life.count == 0:
+            reset_game(
+                scoreboard,
+                life,
+            )
+
         if ball.sprite.isDropped:
             ball.sprite.isDropped = False
     else:
         # Ignore
         pass
+
+
+def reset_game(
+        scoreboard: Scoring,
+        life: Life,
+):
+    scoreboard.reset_score()
+    life.reset()
 
 
 def draw_field(
@@ -113,7 +141,7 @@ def draw_fps(
         screen: gm.Surface,
         fps: float,
 ) -> None:
-    fps_font = ftype.SysFont("ubuntumono", 18)
+    fps_font = ftype.SysFont(None, 12)
     fps_val = round(fps, 0)
     xpos = 10
     ypos = screen.get_rect().bottom - 25
@@ -131,7 +159,8 @@ def draw_prompt(
         message: str,
         color: any,
 ) -> None:
-    prompt = ftype.SysFont(settings.font_type, settings.size)
+    prompt = ftype.Font(settings.font,
+                        settings.size,)
     screen_rect = screen.get_rect()
     prompt_scr, prompt_rect = prompt.render(
         message,
@@ -142,11 +171,10 @@ def draw_prompt(
     screen.blit(prompt_scr, prompt_rect)
 
 
-
 def create_targets(
         screen: gm.Surface,
         settings: Settings,
-) -> [Group, float]:
+) -> [Group, float, int]:
     target_collection = Group()
     # Calculate max targets per row based on screen width
     target_template = Target(screen, settings)
@@ -172,7 +200,9 @@ def create_targets(
     bottom_ypos = ((target_template.rect.height * (max_rows + 1))
                    + (max_rows * spacer)
                    + y_offset)
-    return target_collection, bottom_ypos
+    
+    max_count = max_columns * max_rows
+    return target_collection, bottom_ypos, max_count
 
 
 def add_target(
@@ -197,6 +227,7 @@ def add_target(
 
 
 def update_targets(
+        settings: Settings,
         ball: GroupSingle,
         targets: Group,
         scoreboard: Scoring,
@@ -210,21 +241,23 @@ def update_targets(
         True,
     )
     if collisions:
-        # Update score
-        scoreboard.add_combo()
-
         # Check how to bounce
         for ball_c, target_c in collisions.items():
             for target in target_c:
+                # Update score
+                scoreboard.add_combo()
                 ball_rect = ball_c.rect
                 target_rect = target.rect
-                ball.sprite.color = target.color
+                if settings.ball_copy_target_color:
+                    ball.sprite.color = target.color
+
                 # Ball hits above/below
                 if ((abs(ball_rect.bottom - target_rect.top) <= HIT_THRESHOLD
                      and ball.sprite.diry > 0)
                         or (abs(ball_rect.top - target_rect.bottom) <= HIT_THRESHOLD
                             and ball.sprite.diry < 0)):
                     ball.sprite.bounce_y()
+
                 # If ball hits the sides
                 if ((abs(ball_rect.right - target_rect.left) <= HIT_THRESHOLD
                     and ball.sprite.dirx > 0)
@@ -238,7 +271,7 @@ def new_level(
         settings: Settings,
         ball: GroupSingle,
 ) -> Group:
-    targets, bottom_y = gfn.create_targets(
+    targets, bottom_y, _ = gfn.create_targets(
         screen,
         settings,
     )
@@ -258,6 +291,7 @@ def update_screen(
         fps: float,
         scoreboard: Scoring,
         eventhndl: GameEvents,
+        life: Life,
 ) -> None:
     # Flood screen to clear all drawings
     screen.fill(settings.screen_bgcolor)
@@ -269,7 +303,7 @@ def update_screen(
     paddle.update()
 
     # Update ball
-    ball.update(paddle)
+    ball.update(paddle, life)
     if ball.sprite.paddle_hit:
         scoreboard.reset_combo_point()
 
@@ -283,17 +317,30 @@ def update_screen(
     # Update scores
     scoreboard.update()
 
+    # Update life status on screen
+    life.update()
+
     # Check if ball dropped below paddle/screen
     if ball.sprite.isDropped:
-        if scoreboard.update_scoreboardhigh():
-            eventhndl.start_event_newhigh(250, 6)
+        if settings.game_on:
+            if scoreboard.update_scoreboardhigh():
+                eventhndl.start_event_newhigh(250, 6)
+            if life.count > 0:
+                prompt_str = "Press 'spacebar' to continue."
+                prompt_color = settings.Prompt.COLOR_WARNING
+            else:
+                prompt_str = "Game Over! Press 'spacebar' to restart."
+                prompt_color = settings.Prompt.COLOR_ERROR
+        else:
+            prompt_str = "Press 'spacebar' to start."
+            prompt_color = settings.Prompt.COLOR_NORMAL
         ball.sprite.ball_dropped()
         paddle.to_center()
         draw_prompt(
             screen,
             settings.Prompt,
-            "Press 'spacebar' to continue.",
-            settings.Prompt.COLOR_WARNING,
+            prompt_str,
+            prompt_color,
         )
 
     gm.display.flip()
