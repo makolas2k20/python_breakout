@@ -13,6 +13,7 @@ from ball import Ball
 from score import Scoring
 from game_events import GameEvents
 from life import Life
+from soundsys import SoundSystem
 
 
 class MainGame():
@@ -36,12 +37,16 @@ class MainGame():
         clock = gm.time.Clock()
         fps = self.game_settings.game_desiredfps
 
+        # Sound System
+        sounds = SoundSystem(self.game_settings)
+        sounds.play_bgm()
+
         # Load Paddle
         paddle = Paddle(screen, self.game_settings)
         paddle.to_center()
 
         # Load Ball
-        ball = GroupSingle(Ball(screen, self.game_settings, paddle))
+        ball = GroupSingle(Ball(screen, self.game_settings, paddle, sounds))
 
         # Load Targets
         targets, _, max_targets = gfn.create_targets(
@@ -73,6 +78,7 @@ class MainGame():
                 scoreboard,
                 event_handler,
                 lives,
+                sounds,
             )
 
             if self.game_settings.game_on:
@@ -82,6 +88,7 @@ class MainGame():
                     ball,
                     targets,
                     scoreboard,
+                    sounds,
                 )
 
                 target_count = len(targets)

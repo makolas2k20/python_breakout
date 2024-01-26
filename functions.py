@@ -15,6 +15,7 @@ from targets import Target
 from score import Scoring
 from game_events import GameEvents
 from life import Life
+from soundsys import SoundSystem
 
 
 def block_events():
@@ -32,10 +33,12 @@ def check_events(
         scoreboard: Scoring,
         eventhndl: GameEvents,
         life: Life,
+        sounds: SoundSystem,
 ) -> None:
     for event in gm.event.get():
         if event.type == gm.QUIT:
             scoreboard._save_highscore()
+            sounds.quit()
             gm.quit()
             sys.exit()
 
@@ -129,6 +132,10 @@ def draw_field(
         screen: gm.Surface,
         settings: Settings,
 ) -> None:
+    screen.blit(
+        settings.assets.wallpaper,
+        settings.field_rect,
+    )
     gm.draw.rect(
         surface=screen,
         color=settings.field_border_color,
@@ -200,7 +207,7 @@ def create_targets(
     bottom_ypos = ((target_template.rect.height * (max_rows + 1))
                    + (max_rows * spacer)
                    + y_offset)
-    
+
     max_count = max_columns * max_rows
     return target_collection, bottom_ypos, max_count
 
@@ -231,6 +238,7 @@ def update_targets(
         ball: GroupSingle,
         targets: Group,
         scoreboard: Scoring,
+        sounds: SoundSystem,
 ) -> None:
     HIT_THRESHOLD = ball.sprite.speed
     # Check collision with ball
@@ -244,6 +252,9 @@ def update_targets(
         # Check how to bounce
         for ball_c, target_c in collisions.items():
             for target in target_c:
+                # Play sound
+                sounds.play_target()
+
                 # Update score
                 scoreboard.add_combo()
                 ball_rect = ball_c.rect

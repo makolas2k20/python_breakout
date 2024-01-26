@@ -7,6 +7,7 @@ from pygame.sprite import Group, Sprite
 from settings import Settings
 from paddle import Paddle
 from life import Life
+from soundsys import SoundSystem
 
 
 class Ball(Sprite):
@@ -17,12 +18,14 @@ class Ball(Sprite):
             screen: gm.Surface,
             settings: Settings,
             paddle: Paddle,
+            sounds: SoundSystem,
             *groups: Group,
     ) -> None:
         """Ball Init"""
         super().__init__(*groups)
         self.screen = screen
         self.settings = settings
+        self.sounds = sounds
 
         # Load Settings
         self.screen_rect = screen.get_rect()
@@ -55,14 +58,16 @@ class Ball(Sprite):
             paddle: Paddle,
     ) -> bool:
         HIT_THRESHOLD = self.speed
-        paddle_hit = self.rect.colliderect(paddle.rect)
+        paddle_hit = self.rect.colliderect(paddle.rect)            
         if not self.isDropped:
             if (self.rect.right >= self.screen_rect.right
                     or self.rect.left <= 0):
+                self.sounds.play_paddle()
                 self.bounce_x()
             if (self.rect.top <= self.settings.field_ypos
                     or (abs(self.rect.bottom - paddle.rect.top) <= HIT_THRESHOLD)
                     and paddle_hit):
+                self.sounds.play_paddle()
                 self.bounce_y()
 
             self.centerx += (self.speed * self.dirx)

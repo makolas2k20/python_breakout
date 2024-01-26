@@ -63,6 +63,9 @@ class Settings():
             gm.K_d,
         )
 
+        self.life = self.Life()
+        self.assets = self.Assets()
+
     class Scoreboard():
         """Scoreboard settings"""
         pos_current_label = (310, 10)
@@ -99,3 +102,26 @@ class Settings():
         color = 'red'
         max_life = 5
         symbol = '§'
+        use_image = True
+        image = 'assets/heart_life.png'
+        image_width = 30
+        image_height = 28
+
+        def __init__(self) -> None:
+            self.life_img = gm.image.load(self.image)
+            self.life_rect = gm.Rect(
+                0,
+                0,
+                self.image_width,
+                self.image_height
+            )
+
+    class Assets():
+        """Sound/Music/BG"""
+        BG_IMAGE = 'assets/space-art-5626853_1280.jpg'
+        BG_MUSIC = 'assets/space-ambient-sci-fi-121842.mp3'
+        SOUND_PADDLE = 'assets/paddle_hit.wav'
+        SOUND_TARGET = 'assets/brick_break.wav'
+
+        def __init__(self) -> None:
+            self.wallpaper = gm.image.load(self.BG_IMAGE)
